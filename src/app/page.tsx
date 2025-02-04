@@ -44,21 +44,19 @@ export default function Home() {
         className="mx-auto flex max-w-[980px] flex-col items-center gap-8 py-8 md:py-12 md:pb-8 lg:py-24 lg:pb-20"
       >
         <motion.h1 
-          as="h1"
           className="text-center text-3xl font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1]"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
           探求する知能、<motion.span 
-            as="span"
+
             className="text-primary"
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 300 }}
           >人間らしさ</motion.span>の本質を追い求めて
         </motion.h1>
         <motion.p 
-          as="p"
           className="max-w-[750px] text-center text-lg text-muted-foreground sm:text-xl"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -152,6 +150,30 @@ export default function Home() {
                 <Badge className="hover:scale-105 transition-transform">ブログ</Badge>
                 <Badge className="hover:scale-105 transition-transform">コミュニティ</Badge>
               </div>
+            </CardContent>
+          </Card>
+        </MotionDiv>
+
+        <MotionDiv variants={item}>
+          <Card className="hover:shadow-lg transition-shadow duration-300 h-full border-primary/20">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <IconBrain className="w-6 h-6 text-primary" />
+                <CardTitle>AI生成リサーチ</CardTitle>
+                <Badge variant="secondary" className="ml-2">AI生成</Badge>
+              </div>
+              <CardDescription>OpenAI DeepResearchによる解析と考察</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">最新のAI技術を活用して生成された、深い洞察と分析を含む研究記事コレクション。</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Badge className="hover:scale-105 transition-transform">OpenAI</Badge>
+                <Badge className="hover:scale-105 transition-transform">DeepResearch</Badge>
+                <Badge className="hover:scale-105 transition-transform">AI分析</Badge>
+              </div>
+              <Button variant="outline" className="w-full mt-4" asChild>
+                <a href="/research">AI生成記事を読む</a>
+              </Button>
             </CardContent>
           </Card>
         </MotionDiv>
