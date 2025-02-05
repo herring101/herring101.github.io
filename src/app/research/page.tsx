@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getAllResearchPosts } from "@/lib/research";
 import Link from "next/link";
 
@@ -8,11 +9,16 @@ export default async function ResearchPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-4">
         <h1 className="text-4xl font-bold">AI生成リサーチ記事</h1>
         <Badge variant="secondary" className="text-lg">AI生成コンテンツ</Badge>
       </div>
-      <p className="text-xl text-muted-foreground mb-8">OpenAI DeepResearchを活用して生成された、深い洞察と分析を含む研究記事コレクション</p>
+      <div className="flex justify-between items-center mb-8">
+        <p className="text-xl text-muted-foreground">OpenAI DeepResearchを活用して生成された、深い洞察と分析を含む研究記事コレクション</p>
+        <Button variant="outline" asChild className="whitespace-nowrap">
+          <Link href="/research/tags">タグ一覧を見る</Link>
+        </Button>
+      </div>
       <div className="grid gap-6 md:grid-cols-2">
         {posts.map((post) => (
           <Link key={post.slug} href={`/research/${post.slug}`}>

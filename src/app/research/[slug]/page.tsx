@@ -1,5 +1,6 @@
 import { getResearchPost, getAllResearchPosts } from "@/lib/research";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 
@@ -33,9 +34,11 @@ export default function ResearchPost({ params }: Props) {
           </time>
           <div className="flex gap-2 flex-wrap">
             {post.tags.map((tag) => (
-              <Badge key={tag} variant="secondary">
-                {tag}
-              </Badge>
+              <Link key={tag} href={`/research/tags/${encodeURIComponent(tag)}`}>
+                <Badge variant="secondary" className="hover:scale-105 transition-transform">
+                  {tag}
+                </Badge>
+              </Link>
             ))}
           </div>
         </div>
