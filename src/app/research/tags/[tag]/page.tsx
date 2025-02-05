@@ -3,14 +3,7 @@ import { getAllTags, tagMetadata } from "@/lib/tags";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { IconTag, IconBrain, IconCode, IconNetwork } from "@tabler/icons-react";
-
-const iconMap = {
-  code: IconCode,
-  brain: IconBrain,
-  network: IconNetwork,
-  tag: IconTag
-} as const;
+import { TagIcon } from "@/components/ui/tag-icon";
 import { notFound } from "next/navigation";
 
 interface Props {
@@ -19,11 +12,12 @@ interface Props {
   };
 }
 
+// ビルド時に生成する必要があるすべてのタグページのパラメータを指定
 export async function generateStaticParams() {
   const posts = getAllResearchPosts();
   const tags = getAllTags(posts);
   return tags.map((tag) => ({
-    tag: tag.name,
+    tag: encodeURIComponent(tag.name),
   }));
 }
 
@@ -37,12 +31,12 @@ export default async function TagPage({ params }: Props) {
     notFound();
   }
 
-  const IconComponent = tag.icon ? iconMap[tag.icon as keyof typeof iconMap] : IconTag;
+
 
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center gap-4 mb-8">
-        <IconComponent className="w-8 h-8 text-primary" />
+        <TagIcon icon={tag.icon} className="text-primary" size={32} />
         <h1 className="text-4xl font-bold">{tag.name}</h1>
         <Badge variant="secondary" className="text-lg">{tag.posts.length}件</Badge>
       </div>

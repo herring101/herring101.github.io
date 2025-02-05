@@ -3,6 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface Props {
   params: {
@@ -46,7 +49,15 @@ export default function ResearchPost({ params }: Props) {
       </div>
       
       <div className="prose prose-lg dark:prose-invert max-w-none">
-        <MDXRemote source={post.content} />
+        <MDXRemote
+          source={post.content}
+          options={{
+            mdxOptions: {
+              remarkPlugins: [remarkMath],
+              rehypePlugins: [rehypeKatex]
+            }
+          }}
+        />
       </div>
     </article>
   );

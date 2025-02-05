@@ -1,0 +1,221 @@
+---
+title: 量子回路ベースではない量子プログラミング言語の詳細調査
+date: 2025-02-05
+summary: 量子回路ベースではない量子プログラミング言語（QLISP, Silq, Quipper, QMLなど）の特徴や利点を詳しく解説。従来の量子ゲートレベルのプログラミングとの違いや、抽象的な量子計算の記述方法を探る。
+tags: ["量子プログラミング", "関数型プログラミング", "言語設計", "量子計算"]
+---
+
+# 量子回路モデルに依存しない量子プログラミング言語の調査
+
+## 1. 量子回路モデルに依存しない量子プログラミング言語
+量子回路（ゲート列）を直接記述するのではなく、より高い抽象度で量子計算を表現できる言語が提案されています。代表的なものに、QLISP、Silq、Quipper、QML、Lambda-Q、Proto-Quipperなどがあります。
+
+- **QLISP**（Quantum Lisp）：Common Lispへの拡張として開発された量子計算シミュレータです。2006年にBrecht Desmetらによって提案され、量子計算を**数学的な線形代数の形式**で直接記述できます [^1] 例えば、内部的には量子レジスタの状態を振幅のベクトル（行列）として保持し、ユーザはその振幅に直接アクセス・操作できます [^2] これは高レベルな量子演算子を基本ゲートへ分解する従来手法と対照的で、**ハダマード行列$H^{\otimes n}$を適用して$n$量子ビットを一度にスーパーポジションに初期化**するといった操作を簡潔に表現できます [^3]  [^4] QLISPでは量子状態をランタイムに観察・変更することも可能で（物理的には許されませんがシミュレータ上では可能）、教育的プラットフォームとして柔軟性があります [^1] 歴史的には、まだ実機のない時代に**量子プログラミングの教育・実験用**として登場した経緯があります。
+
+- **Silq**：ETHチューリッヒのVechev教授らが2020年に発表した**高水準の量子プログラミング言語**です [^5] Silqはハードウェアのゲート実装から離れ、アルゴリズムを直感的に記述することを重視しています [^6]  [^7] 最大の特徴は**「安全な自動アンコンピュテーション」**です。量子計算では、一時変数をそのまま捨てると量子状態が崩壊してしまうため、通常は不要になった計算結果を**逆演算で消去（uncompute）**する必要があります。Silqでは型システムとコンパイラがこれを自動で挿入し、プログラマが逐一アンコンピュートする煩雑さを解消しました [^5] 型システムは線形型に似た拡張（`qfree`や`!`注釈など）を持ち、**古典データと量子データを区別**して非物理的な操作を静的に排除します [^8]  [^9] その結果、Silqのコードは他の言語（例えばQ#やQuipper）に比べて約3～4割短く、使用する量子基本操作も半分程度になるという報告があります [^10] 設計思想として、「量子ハードウェアではなくプログラマの思考」に言語を合わせることを掲げており [^11] 従来の言語（Q#やQiskitなど）が低レベルの回路記述に近かったのに対し、**Silqはアルゴリズムを直接表現できる構文と安全性**を提供します。
+
+- **Quipper**：2013年にAlexander GreenやPeter Selingerらが発表した、関数型（関数型DSL）量子プログラミング言語です [^12] Haskell上に埋め込み言語として実装され、**高階関数や遅延評価**を活用して**大規模な量子回路を生成・操作**できます [^13] Quipperは「研究論文でアルゴリズムを記述するのと同程度の抽象度で量子アルゴリズムを書き、それをゲートレベルまでコンパイルする」ことを目標としています [^14] 特徴として、手続き型と宣言型スタイルを柔軟に混在できる構文、高レベルな**回路合成オペレータ**（回路断片を結合・変形する操作子）を備えます [^15] たとえば**古典関数からの可逆回路自動生成**が可能で、古典的なアルゴリズムを記述すると対応する量子回路（可逆計算）が自動で構成されます [^16] また階層化回路・量子データ型・回路変換器など高度な仕組みも提供されます [^16]  [^17] Quipper自体はハードウェア非依存で、出力された回路は将来的な量子デバイスにマップ可能です [^18] 実際、Quipperには7つの非自明な量子アルゴリズム（Boolean formulaアルゴリズムや量子ウォーク、数論アルゴリズムなど）の実装が含まれており、**兆個規模のゲート**を持つ回路も扱える高いスケーラビリティを示しました [^13]  [^19] 設計思想は「量子回路のための関数型言語」であり、形式的な解析（型検査やリソース見積もり）にも適しています [^20] 
+
+- **QML**：2005年にThorsten AltenkirchとJonathan Grattageが提案した**関数型量子プログラミング言語**です [^21] 有限個の型（有限次元）の上で動作する一階関数型言語で、背後にカテゴリー理論に基づく意味論を持ちます [^21]  [^22] 特徴は、**可逆（ユニタリ）な計算と不可逆（測定を含む）な計算を単一の言語に統合**している点です [^23] 線形論理に由来する**厳密線形型（strict linear logic）の型システム**を採用し、量子ビットを使い捨てたりコピーしたりする操作（弱化や収縮）を明示的に管理します [^23] この制約下で書かれたプログラムはデコヒーレンスを起こさず、重ね合わせやエンタングルメントを保ったまま計算できます [^24] さらに特徴的なのは、**量子データだけでなく量子制御構造を持てる**ことです。QMLでは古典的な`if`文に相当する条件分岐に量子ビットを用いることができ、例えば「if ◦x then ... else ...」のような構文で**量子ビット$x$が|0>か|1>かに応じて結果がスーパーポジションとして得られる**処理を記述できます [^25] これは制御ビットが重ね合わせ状態にある場合に**両方の分岐を同時に実行する**ことを意味し、量子並列性を高レベルに表現するものです [^26] QMLはその意味論から**スーパーオペレーターによる記述と回路へのコンパイル**の両方をサポートし [^22]  [^27] 古典プログラミングの高級言語に近い感覚で量子アルゴリズムを記述できる初期の試みでした。
+
+- **Lambda-Q（量子ラムダ計算）**：量子計算を記述するためのラムダ計算拡張です。Philip Mayminが1996年に**lambda-q計算**を提案し、任意の量子計算を記述できる強力なモデルを示しました [^28] Mayminのラムダ計算では確率的・量子的な計算をラムダ項で表現可能でしたが、NP完全問題を効率的に解けてしまうなど**物理的な量子計算より強力**であることが指摘され [^28] 現実の量子コンピュータで実装可能かは疑問とされています [^29] その後、2003年にAndré van Tonderが量子ラムダ計算の改良版を提案し、古典的な制御を持つ量子ラムダ計算を定義するとともにScheme実装を示しました [^30] ラムダ計算ベースの言語は量子回路とは異なる計算モデルを提供し、**理論的には回路モデルと同等の計算能力**を持つことが示されています [^31] Lambda-Q自体は主に理論枠組みですが、関数型言語の持つ合成可能性や高階関数を量子計算に取り込む先駆けとなりました。
+
+- **Proto-Quipper**：Quipperの設計を形式的に洗練するために開発された**実験的サブ言語群**です。Peter Selingerらのグループによって提案され、Quipperの一部機能に対応した複数のバリアントがあります [^32] 例えば**Proto-Quipper-S**は線形型システムとサブタイプを備えた言語、**Proto-Quipper-M**はサブタイプなしの線形型と言語学的意味論（カテゴリー意味論）を持つ言語、**Proto-Quipper-D**は線形依存型を導入した言語です [^32]  [^33] Proto-Quipperでは、回路生成時と回路実行時の二相の区別や、古典データと量子データの厳密な型分離（パラメータ型と量子状態型）など、Quipperの特徴を小さなコア言語で明示的に扱います [^34] 例えば、古典的に既知で複製・破棄可能な型（NatやBoolなど）と、量子的で線形性を持つ型を区別しつつ、それらを組み合わせた複合型も定義可能にしています [^35] これは**量子プログラムの型安全性とリソース（回路サイズ）解析**のための理論的基盤を与え、将来的により安全な量子言語の設計に寄与します [^32] Proto-Quipper自体はユーザが直接アルゴリズム開発に使うというより、**量子プログラミング言語を形式的に研究するためのフレームワーク**と位置付けられます。
+
+## 2. 量子回路ベースではないプログラミングアプローチ
+
+### 量子関数型プログラミングの可能性
+関数型プログラミングのパラダイムは、量子計算との親和性が指摘されています。副作用の少ない計算モデルや高階関数による抽象化は、量子アルゴリズムを**数学的関数や合成可能な変換**として捉えることを可能にします。実際、QuipperやQMLのように**関数（ケティング操作）をファーストクラス市民**として扱い、関数合成＝回路の直列接続、関数の直積＝回路の並列といった形で量子回路をモデル化できます。関数型言語では**線形型**を導入することで、量子ビットの重ね合わせ状態を扱いつつ不正なコピーを防ぐことができます。例えばQMLでは線形型で量子状態の使い捨てを制限し、Silqでも型システムで重ね合わせの有無を追跡しています [^8]  [^9] 関数型アプローチでは、**量子プログラムを数理的に解析**したり、関数の等価変換でアルゴリズムを最適化したりしやすい利点があります。また**高階関数**により、他の関数（=サブ回路）を引数に取るような汎用的な量子演算（例えばマップやフォールドに相当する回路操作）も記述可能です。これは量子アルゴリズムを部品化・再利用する上で有用です。
+
+### 量子命令型プログラミングとの違い
+量子命令型（インペラティブ）プログラミングは、古典プログラミングと同様に**状態と逐次命令**に焦点を当てます。典型的には、プログラマはレジスタ上の量子ビットに順次ゲートを適用し、条件分岐やループで制御構造を作ります（QiskitやCirq、QCLなどが該当）。このモデルでは**現在の量子状態を破壊的に更新**する形でプログラムが進行します。一方、量子関数型では**状態の変化を関数適用として表現**し、中間状態に明示的な名前を付けないことも多いです。命令型では可読性のために変数に量子ビットを束縛しますが、関数型ではラムダ計算のように直接関数の入出力として量子ビット（あるいは量子レジスタ）を扱います。違いとして、**可逆性の扱い**があります。命令型ではプログラマが自ら一時変数をアンコンピュートしたり、不要ビットを測定して0にリセットしたりといったリソース管理を行う必要があります。一方関数型では、**不要になった中間結果は参照がなくなることで自動的に解放**されますが、それが物理的に安全にできるかを型で保証するアプローチ（Silqのように）や、コンパイル時に**Bennettの法則**に従って自動で逆演算を挿入するアプローチが取られています [^5]  [^36] また、量子命令型では古典制御と量子操作のインターリーブが自由にできる半面、**量子ビットを含む条件分岐（量子制御フロー）は基本的に禁止**されます（重ね合わせのままでは`if`できないため、測定が必要）。これに対し関数型・宣言型の一部言語（QMLなど）は**量子制御を言語レベルで許容**し、その代わりに裏でそれをユニタリ回路に変換する工夫を凝らしています [^26] 総じて、関数型は高レベルの抽象化と安全性を提供し、命令型はハードウェア実装を意識した細かな制御が可能という違いがあります。
+
+### 宣言型アプローチや確率論的プログラミングの活用
+量子計算を「どう計算するか」ではなく「**何を求めるか**」で記述する宣言型の試みも存在します。例えば、量子プログラムの**論理的性質**を記述・検証するための動的論理（Dynamic Logic of Quantum Programs, LQP）や、ダイクストラのガード付きコマンド言語を量子版に拡張したqGCL [^37] どがあります。qGCLでは量子プログラムの推論規則を与え、プログラムを**数学的な論理式（前後条件）**として記述するアプローチを取ります。これらは直接実行するというより、**仕様記述やモデル検査**に用いられる宣言的手法です。
+
+また、量子プログラムは確率的な振る舞い（測定によるランダム性）を伴うため、確率的プログラミングの考え方が参考になります。確率的プログラミングでは分布やランダム変数を一級の値として操作しますが、量子では確率に加えて**位相（複素位相）**が重要です。そのため直接の適用は難しいものの、「測定結果の確率分布」を記述・推論するには確率的アプローチが有用です。例えば量子アルゴリズムの正当性を示すのに、確率的プログラミングのように**望む結果が一定以上の確率で得られる**ことを論じたりできます。さらには、将来的に**量子プログラム合成**において、宣言型に「この問題を解く量子アルゴリズムを求めよ」と指定し、システムが自動で適切な量子回路を生成する、といった研究も考えられます。現状、量子言語で純粋な宣言型は主流ではありませんが、一部に量子Prologのような論理プログラミング的試みや、ハイブリッド量子古典最適化問題（QUBO）を記述するための宣言的フレームワークなども検討されています。
+
+## 3. 量子ゲートレベルではなく高レベルで量子計算を記述する方法
+
+### 高レベル抽象化を提供する言語の特徴
+高レベル抽象化を提供する言語では、量子ビットやゲートの詳細に踏み込まずにアルゴリズムの本質を記述できます。例えばSilqやQuipperでは、**古典的なデータ構造（配列や数値）や制御構造（ループ、条件）をそのまま使用**して量子アルゴリズムを表現できます [^38] Silqでは変数を宣言し（`q := 0;` で|0>状態の量子ビットを割り当て）、古典的な変数と同様にスコープから外れれば自動的に解放されます。その際に量子ビットであれば暗黙にアンコンピュート処理が行われます [^5] QuipperではHaskellの関数を使って回路を組み立てるため、再帰や高階関数、リスト操作など**抽象度の高い構成**が可能です。例えば大きなアルゴリズムを複数のサブアルゴリズム（サブルーチン）に分割し、それぞれを関数として定義してから組み合わせる、といったモジュール化ができます。このような言語は、**アルゴリズムの意図をコード上で追いやすい**利点があります。アルゴリズム設計者は量子フーリエ変換やオラクル関数といった大きな単位で考え、その部分は言語が提供するライブラリ関数や高水準構文で記述し、細部のゲート構成はコンパイラやライブラリに任せることができます。
+
+さらに、高レベル言語の多くは**型システムによる抽象化**も特徴です。型で量子ビットや古典ビット、あるいは可逆関数かどうかを区別し、誤用を防ぎます。例えばProto-QuipperやSilqでは型レベルで「この関数は量子操作を含まない（`qfree`）」等を示せ [^39] そうした関数については自動でアンコンピュートする、などコンパイラが最適化やチェックを行います。これは**抽象度を上げつつも物理法則に反しない**プログラミングを支援するものです。
+
+### 量子アルゴリズム記述の具体例
+高レベル言語を使うと、Groverの探索やShorの素因数分解アルゴリズムといった有名な量子アルゴリズムも、論文に近い形で記述できます。例えば**Groverのアルゴリズム**では、標準的な手順は「全状態のスーパーポジションを用意→オラクル関数でマーク→位相反転→拡散変換」という流れですが、Quipperの場合、あらかじめ用意された拡散変換（**Grover拡散オペレータ**）をライブラリから呼び出し、オラクルも問題に応じて古典関数として書き、それを自動可逆化することで実装できます。Silqであれば、リストから特定要素を探す操作をループで書き、その中で量子並列性を活かす部分（条件チェックのオラクルなど）だけを量子計算にし、残りは古典的に記述するといった融合も可能です。**Shorのアルゴリズム**では特に大きな整数のmod演算やべき乗計算など古典計算部分が多いですが、高級言語ではこれらを**そのまま古典コードとして書き**、コンパイラが必要な可逆回路に変換してくれます [^16] Quipperでは実際に、Shorのアルゴリズムのコアとなる**modular exponentiation（累乗計算）**を古典的アルゴリズムとして実装し、それを自動で量子回路化することに成功しています（さらに必要な量子フーリエ変換などはライブラリ関数で提供） [^17] 
+
+もう一つの例として、**Deutsch-Jozsaアルゴリズム**や**ベル状態の生成**を挙げます。Quipperのコードでは、ベル状態生成は次のように書けます：
+
+```haskell
+plus_minus :: Bool -> Circ Qubit
+plus_minus b = do
+    q <- qinit b         -- ブール値bに対応する|0>または|1>の量子ビットを準備
+    had q                -- アダマール(H)を適用して (|0>+|1>)/√2 または (|0>-|1>)/√2 を作る
+    return q
+```
+
+```haskell
+share :: Qubit -> Circ (Qubit, Qubit)
+share q = do
+    r <- qinit False     -- 補助の|0>ビットを用意
+    q `controlled` qnot r  -- qをコントロールビットとしてrにCNOTを適用（エンタングル）
+    return (q, r)
+}
+```
+
+このように、まず`plus_minus False`で|+>状態を作り、それを`share`に渡すことで2量子ビットのエンタングル状態（ベル状態$|\Phi^+\rangle$）が得られます [^40]  [^41] ここで注目すべきは、Quipperでは**コントロール付きオペレーション**も簡潔に表現できる点です。上記ではバッククォート構文と`controlled`関数により、`qnot`（NOTゲート）を量子ビット`q`で制御して`r`に適用しています [^41] 低レベルでCNOTゲートを指定する代わりに、**既存の関数を制御版に変換**する高レベル操作子を使えるわけです。高レベル言語ではこのように**抽象的な操作の組み合わせ**でアルゴリズムを書けるため、例えば「2進木上の量子ウォークアルゴリズム」 [^19] ど複雑なアルゴリズムでも、構造を見通したコードになります。
+
+### 量子状態の直接的な操作とその利点
+高水準言語の一部やシミュレータ環境では、量子状態ベクトルを直接操作することも可能です。QLISPは特にこの点に優れ、量子レジスタ生成時に**任意の初期状態を与えるための高階関数**を受け取れます [^2] 例えば、`(make-qureg 3 hadamard-init)`とすれば3量子ビットを生成し、用意された`hadamard-init`関数によって**全てのビットにHを適用した状態**（$H^{\otimes 3}|000\rangle = \frac{1}{2\sqrt{2}}\sum_{x\in\{0,1\}^3}|x\rangle$）に初期化します [^42] このように、ゲート適用を逐次シミュレートする代わりに**行列・ベクトル演算として一括適用**できるため、数学的に状態を把握しやすくなります [^43] 利点として、アルゴリズムの結果となる状態を直接記述・検証できることが挙げられます。例えばQMLのプログラム例では、「入力ビットが真なら$|qfalse\rangle$と$-1$倍位相付きの$|qtrue\rangle$の重ね合わせ、偽なら$|qfalse\rangle$と$|qtrue\rangle$の重ね合わせを返す」という形でHadamard変換を定義していました [^25] このように**状態そのものを式として記述**できると、連続してそれを適用した場合に元に戻る（Hを2回適用すると恒等になる）こともコードを見て理解できます [^25] 物理ハードウェア上では直接状態を書き換えることはできませんが、シミュレーション環境ではあえてそうすることで**アルゴリズムの動作原理を確認**したり、**最適な回路を探索**したりできます。例えば量子機械学習では目標の状態を与えてそれに近づく回路を変分的に見つける、という手法がありますが、この際にも高レベルから「目標状態」を指定できれば有用です。
+
+直接状態操作の利点は他にも、**デバッグや可視化**があります。QLISPのように内部の量子状態を観察できると、アルゴリズム途中での振幅や位相分布を調べられます [^1] これは通常の量子計算では測定しないと見えない情報ですが、シミュレータならではの強みです。ただし、このような操作は実機では不可能であり、量子プログラムとしては破綻したものになるため、実際に動作させる際は注意が必要です。高レベル言語であっても**物理的に許される操作のみを許容**する（Silqのように）設計と、教育的用途で**非物理的な操作も許す**（QLISPのように）設計があり、目的に応じて使い分けられています。
+
+## 4. 既存の量子プログラミングフレームワークとの比較
+
+### QiskitやCirq、PyQuilとの比較
+Qiskit（IBM）、Cirq（Google）、PyQuil（Rigetti）といったフレームワークは、主に**量子回路を直接構築するためのライブラリ**です。Pythonから利用でき、量子ビットの確保、ゲートの適用、測定といった操作を提供します。基本的には**命令型**のスタイルで、ユーザは逐次回路を組み立てます。例えばQiskitでは以下のように記述します。
+
+```python
+qr = QuantumRegister(2)
+cr = ClassicalRegister(2)
+circuit = QuantumCircuit(qr, cr)
+circuit.h(qr[0])       # 0番目の量子ビットにHadamard
+circuit.cx(qr[0], qr[1])  # CNOT: qr[0]を制御、qr[1]に適用
+circuit.measure(qr, cr)   # 測定
+```
+
+このように**ゲート単位**で操作する点で、SilqやQuipperのような高レベル言語とはアプローチが異なります。フレームワークは実機ハードウェアや低レベル命令（OpenQASMやQuilアセンブリ）と連携することを重視しており、構築した回路を直接量子プロセッサ上で実行したり、ノイズシミュレータで試したりすることが容易です。一方、高レベル言語はまず**アルゴリズム記述とその検証**に重点があり、現段階では多くが研究用途で実機とのインターフェースは限定的です。例えばQuipperやQMLは実ハードへの実行機能を持ちません（Quipperは生成した回路を他の実行系に渡すことはできます）。Silqも現状ではシミュレータ上で動く言語であり、特定のハードウェアバックエンドとは結び付いていません。
+
+### 量子コンパイラやシミュレーション環境の違い
+フレームワーク（Qiskit等）は内部に**量子コンパイラ/トランスパイラ**を備え、ユーザが記述した回路をデバイス上で実行可能な形に最適化・変換します。例えばゲートの再配置、回路深さの短縮、ハードウェアに存在しないゲートの分解、量子ビットのマッピング（割り当て）などが自動で行われます。これに対し、高レベル言語のコンパイラは**アルゴリズム記述を回路へ落とす**ことが主な役割です。SilqやQMLのコンパイラは、プログラム中の高水準操作（ループや条件、関数呼び出しなど）を展開し、必要な量子ビット数やゲート列を生成します [^22] Quipperは埋め込み言語なので、Haskellプログラムを実行すると同時に回路構造が構築されます（その意味でコンパイルというより実行時生成）。最終的に出力される回路（ゲート列）に対して、ハード依存の最適化は施されないことが多く、別途Qiskit等に渡して最適化させることもあります。
+
+シミュレーション環境も差異があります。フレームワーク付属のシミュレータ（例えばQiskit AerやPyQuil QVM）は基本的に**状態ベクトル**や**確率測定**を高速に行うよう実装されています。一方QLISPのような研究プロトタイプは最適化に限界があり、ビット数が増えると計算量的に厳しい場合があります。ただ、高レベル言語のシミュレータは**抽象度の高いデバッグ機能**（例えば型違反の検出や、Silqのようにスコープアウトした量子変数の自動消去チェックなど）を持つことが多く、ユーザにとって安心感があります。
+
+### 高レベル言語の利点と課題
+高レベル言語の利点は何といっても**開発生産性とコードの明瞭さ**です。量子アルゴリズムの意図を直接コードに反映でき、複雑な回路でもコード行数を抑え直観的に書けます。Silqの評価では、従来言語に比べプログラムが短く読みやすいだけでなく、扱う量子基本操作（例えばHadamardやCNOTといった低レベル命令）の数も半減したとされています [^10] また、型システムや言語仕様によって**量子の物理法則を違反するプログラムを未然に防止**できるのも利点です [^8] 例えばSilqでは線形型的な制約で「量子ビットを重ね合わせのまま捨ててしまう」ようなコードはコンパイルエラーになります。QMLでも量子的な条件分岐を可能にする代わり、線形論理で安全性を確保しました [^23] さらに、Quipperのように関数型言語として定式化されている場合、**プログラム変換や検証**（等価変換、部分正当性の証明など）に数学的手法を適用しやすいです [^20] 実際、Proto-Quipperは形式的手法でプログラムの回路サイズ上界を導出する研究も行っています [^32]  [^44] 
+
+課題としては、**学習コストや普及度**があります。QuipperやQMLはHaskellや線形論理といった高度な概念が背景にあるため、量子アルゴリズム専門の研究者であっても習得に時間がかかる場合があります。また、コミュニティとツールの成熟度でQiskit系に劣ります。現状、実機で実行するには結局回路に落としてから既存フレームワークに渡す必要があるため、**統合開発環境として一貫して使うことが難しい**側面もあります。例えばSilqで書いたコードを直接IBM QuantumやIonQのマシンで動かすことはできないので、中間表現への変換や結合コードを書く必要があります。さらに、最適化という点でも課題があります。高レベル言語は抽象的にコードを書く分、**生成される回路がリソース的に効率的とは限らない**場合があります。人間が手工芸的に最適化した回路と比べると、冗長な部分が出る可能性があります（もっとも、それを補うためにコンパイラ側で最適化アルゴリズムを入れる余地があります）。また、一部の高レベル言語は**動的な量子プログラム**（途中で測定して結果に応じ回路を変える等）に弱いケースもあります。例えばQMLは基本的に静的な回路しか表現できませんし、Quipperも量子回路自体は静的構造です（ただし古典コンピュータで動的に回路を組み立てることはできます [^45] 。対照的にQiskitやCirqでは実行中にクラシカルな条件分岐を挿入でき（ループ内で測定結果によって次の操作を変更するなど）、ハードウェアもそれをサポートしつつあります。高レベル言語がこの動的適応に対応するには、更なる言語拡張やモデル化が必要でしょう。
+
+## 5. 実際のコード例と応用
+
+### 各言語のサンプルコード
+ここでは挙げてきた言語の簡単なコード例を示します。それぞれの文法や特徴が垣間見えるようなものを選びます。
+
+- **QLISP（Quantum Lisp）**: QLISPはCommon Lispベースなのでプレフィックス表記です。例えば3量子ビットをハダマードで初期化するには以下のように書けます。
+
+  ```lisp
+  (defparameter *q* (make-qureg 3 'hadamard-init))
+  ```
+
+  上記ではまず`make-qureg`で長さ3の量子レジスタを生成し、`hadamard-init`という関数を渡して初期化しています [^2] その結果、内部ではベクトル$(\frac{1}{\sqrt{8}},\frac{1}{\sqrt{8}},...,\frac{1}{\sqrt{8}})$（$2^3=8$次元）として状態が設定されます [^4] QLISPではこのように高階関数で初期状態を自由に設定でき、以降は例えば`(H q 0)`のような感じでビット0にHゲートを適用、`(CNOT q 0 1)`で制御NOT、といった関数呼び出しで操作します。QLISPは教育用途ということもあり、**既存のLispの利点（REPLでの対話実行やマクロによる拡張）**をそのまま活かして実験できます。
+
+- **Silq**: Silqの文法はC系に似ていますが、型注釈に特徴があります。以下に1量子ビットを作成しスーパーポジションを作って測定する簡単なプログラム例を示します。
+
+  ```silq
+  def main() : !Bool {         // main関数、出力は古典Bool型
+      q := 0;                  // 量子ビットqを0で初期化（型は推論でQubitに）
+      H(q);                    // アダマール適用で |0> -> (|0>+|1>)/√2
+      result := measure q;     // 測定して結果を古典ビットに
+      return result;
+  }
+  ```
+
+  上では`q := 0;`と代入していますが、0は古典値（!int型）であり、それを量子ビット型に暗黙変換して`q`に割り当てています [^9] この時点で`q`は量子状態|0>です。`H(q);`でスーパーポジションを作り、`measure q`で測定して古典Boolを得ています。Silqではこのように**古典と量子がシームレス**に混ざったコードを書けます [^38] 関数の戻り型`!Bool`は古典的なBoolであることを示し、結果として`main()`を実行すると0か1が返るでしょう。Silqの注釈`!`や`qfree`はコード中に量子効果があるかを示すマーカーですが、この例ではシンプルなので使っていません。実際には例えば`def f(x:!Int) { ... }`のように書くと`x`が古典整数（重ね合わせではない）であると指定でき、安全にコピー・捨てができます [^46] Silqの応用としては、小規模なアルゴリズム（ドイチュ・ジョサやグローバー、量子フーリエ変換など）の記述が既に試みられており、論文中や公開資料でコード例が示されています [^47] Silqはまだ研究段階ですが、将来的にはQ#のような実用言語へのフィードバックが期待されています。
+
+- **Quipper**: QuipperはHaskellベースなので、`do`記法や型シグネチャが登場します。先ほど少し触れた**ベル状態生成**のコードを再掲します。
+
+  ```haskell
+  plus_minus :: Bool -> Circ Qubit
+  plus_minus b = do
+      q <- qinit b
+      had q
+      return q
+
+  share :: Qubit -> Circ (Qubit, Qubit)
+  share q = do
+      r <- qinit False
+      q `controlled` qnot r
+      return (q, r)
+  ```
+
+  まず`plus_minus`は古典Boolを受け取り、量子ビットを返す関数です [^40] `qinit b`でブール値に対応する量子ビットを|0>または|1>に初期化し、`had q`でHゲートを適用しています。この関数を例えば`plus_minus False`と呼ぶと|+>状態の量子ビットが得られます。同様に`share`は量子ビットを受け取り、新たな量子ビット$r$を|0>で初期化してCNOT（ここでは制御付きノット）をかけ、2量子ビットのタプルを返しています [^41] Quipperでは`Circ Qubit`や`Circ (Qubit,Qubit)`という型が出てきますが、`Circ`モナドが回路構築を担っていることを示します。プログラムを実行すると実際には回路が構築され、例えば`print_simple circuit`のような関数でその回路を可視化（TeXや図として出力）することもできます [^48] Quipperは高度な例として、**量子整数の加算回路**や**量子テレポーテーション**などもチュートリアルで示しています [^49]  [^50] また、研究レベルでは**グラフ上の量子ウォーク**や**ハミルトニアンシミュレーション**などの実装例も報告されています [^19] Quipperの応用分野としては、**量子アルゴリズム研究**全般（特に大規模回路の設計）や、量子回路最適化の形式検証などが挙げられます。
+
+- **QML**: QMLのコードは独特で、論文中では数学的記法で書かれています。例えばHadamard（H）をQMLで定義する部分は以下の通りです。
+
+  ```
+  had : Q2 -> Q2
+  had x = if ◦x 
+          then {qfalse | (-1) qtrue}
+          else {qfalse | qtrue}
+  ```
+
+  ここで`Q2`は1量子ビット（2次元状態空間）の型、`qfalse`/`qtrue`はそれぞれ|0>と|1>に対応する量子データです [^25] `if ◦x`という構文は、量子ビット$x$を測定せずに条件に使う特殊なもので、$x`が|0>の場合は`{qfalse | (-1) qtrue}`（= $|0> - |1>$、つまり|1>に-1の位相を付与した状態）を返し、$x$が|1>なら`{qfalse | qtrue}`（= $|0> + |1>$）を返すという意味になります [^25] 結果的にこれは行列で書けばHadamardそのものですし、2回適用すれば元に戻ることも確認できます [^51] QMLではこのように**ブラケット記法的な重ね合わせ**（`{ state1 | state2 }`のような形）で量子状態を表現します。さらに、2量子ビットの入力に対してそれらが等しいか判定するアルゴリズムも示されています [^26] QMLコードでは、2つの量子ビット$a,b$に対し、それぞれに対する`if ◦a`と`if ◦b`が**入れ子にならず並列に**出現することで「同時に両方を見る」処理を表現し、Deutschの問題を解くような動きをします [^26] このような量子制御構造を直接書ける点がQMLのユニークな部分です。もっとも、QMLは学術プロトタイプであり、実際のコード実行はHaskell上のコンパイラ経由で回路を出力する形でした [^52] 適用可能な分野としては、**量子論理回路の研究**や**量子計算の構造の分類**といった理論的側面が強いですが、将来的にこうした概念は他の言語に受け継がれています。
+
+- **Lambda-Q**: 具体的なコード例というより計算規則になりますが、ラムダ計算拡張では、たとえばランダムな振る舞いを示すラムダ項や、スーパーポジションを作る演算子が定義されます。Mayminの提案では、確率的な二択を表す演算子（コインフリップのような）があり、それを再帰的に用いてNP完全問題を解く項を書く例が示されました。しかし前述の通り物理実現性に問題があり、以降のLambda-Q研究では**線形型を課したラムダ計算**や**測定を含む項の等価性検証**など、より制約を加えた形になっています [^28]  [^53] 例えばvan Tonderの量子ラムダ計算では、`let <x|y> = E in F`のような構文で$E$の結果が$x$と$y$二つの可能性（重ね合わせ）でFに伝播する…といった具合に、ラムダ計算としての評価と量子並列を対応させています。実用コードはありませんが、このような形式体系は**量子プログラミング言語の正当性証明**などに応用されています。
+
+- **Proto-Quipper**: Proto-Quipper自体はエンドユーザ向けではないためコード例は控えめですが、特徴を示すスニペットとして**型注釈**の例を挙げます。Proto-Quipperでは、型に`Parameter`（パラメータ：回路生成時に既知の古典値）か`State`（量子状態として扱う値）かのモーダル区別があります [^54] 例えば、`Bool`はState型のブール（量子ビットと等価）で、`!Bool`のようにエクスクラメーションで修飾するとParameter型のブール（古典的に使える）になります [^35] 関数の型として`!Bool -> Circ Bool`などと書けば、「古典的なブール値を受け取り、量子ブール（=量子ビット）を返す回路を生成する」といった意味になります。実際のProto-Quipper-Dでは線形依存型があり、例えば長さ$n$の古典リストに応じてサイズ$n$の量子レジスタを確保する関数に型で制約を与える、といったこともできます。このような機能は**量子プログラムとその回路資源の関係**を型で表現する試みであり、大規模アルゴリズムのスケーリング則を保証したり、誤用による回路サイズ爆発を防ぐといった応用が期待されます [^32]  [^44] 
+
+### 応用分野と今後の展望
+以上のような高レベル量子言語は、主に**量子アルゴリズム研究や教育**に使われてきました。Quipperは計算機科学者と物理学者の共同プロジェクトで、**量子アルゴリズム実装のプロトタイプ**として成功を収めています [^12] 例えば新しいアルゴリズム提案時に、その概念実証をQuipperでコーディングし回路規模を見積もる、といった使われ方がありました。QLISPやQMLは**教育的利用**が中心で、学生が量子計算の基礎を学ぶ際に、手を動かしてスーパーポジションや量子並列を試すためのツールとなりました [^55] Silqは比較的新しく、**直観的な量子コーディング**を促進することで将来的に量子プログラマの裾野を広げる可能性があります。現状ではハードウェア指向のフレームワークが主流ですが、ゆくゆくはSilqのような高水準言語でプログラムを書き、それを各種バックエンド（IBMやIonQなど各社の量子デバイス）向けにコンパイルする、という流れになるかもしれません。
+
+課題としては先に述べたものに加え、**並行性や分散量子計算への対応**があります。高レベル記述では、例えば量子ネットワーク間でのプロトコル（テレポーテーションや分散アルゴリズム）を書く際に、通信チャネルの抽象化が必要です。現在の言語は1台の量子計算機内で完結する前提が多いので、この点の拡張も今後の研究課題です。また、エラー耐性（量子エラー訂正）の組み込みも将来重要になるでしょう。高レベル言語でアルゴリズムを書く際に、自動的にエラー耐性コードにマッピングしたり、エラー率をパラメータとしてコード生成したりする機能が考えられます。実際、量子誤り訂正は非常に複雑な回路を必要とするため、高級言語による抽象化が望まれます。
+
+総合すると、量子回路ベースではない量子プログラミング言語は、**量子計算機のプログラミング生産性を向上させ、より多くの人々が量子アルゴリズムを開発できるようにする**ための重要な方向性です。その実現には、言語設計とコンパイラ技術、物理デバイス制約の橋渡しといったマルチディシプリナリな取り組みが必要ですが、既にSilqのように具体的な成果も出始めています。今後、産業界のフレームワークと学術的言語の知見が融合し、直観的で安全かつ効率的な量子プログラミング環境が構築されていくことが期待されます。
+
+### 参考文献
+[^1]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=First%2C%20the%20simulator%20has%20the,abstraction%20techniques%20of%20Lisp%20which](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=First%2C%20the%20simulator%20has%20the,abstraction%20techniques%20of%20Lisp%20which)
+[^2]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=in%20terms%20of%20mathematical%20concepts,direct%20access%20to%20the%20internal](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=in%20terms%20of%20mathematical%20concepts,direct%20access%20to%20the%20internal)
+[^3]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=Op%02tionally%2C%20one%20can%20define%20a,of%20dimension%201%20%C3%97%202](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=Op%02tionally%2C%20one%20can%20define%20a,of%20dimension%201%20%C3%97%202)
+[^4]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=The%20mathematical%20meaning%20of%20H%E2%8A%97n,4](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=The%20mathematical%20meaning%20of%20H%E2%8A%97n,4)
+[^5]: [Silq: A High-Level Quantum Language with Safe Uncomputation and Intuitive Semantics](https://files.sri.inf.ethz.ch/website/papers/pldi20-silq.pdf#:~:text=Existing%20quantum%20languages%20force%20the,To%20ensure)
+[^6]: [Silq - The Easier Quantum Computer Programming Language](https://thequantuminsider.com/2021/04/27/silq-the-easier-quantum-computer-programming-language/#:~:text=Silq%20is%20the%20first%20high,level%20implementation%20of%20quantum%20algorithms)
+[^7]: [Silq - The Easier Quantum Computer Programming Language](https://thequantuminsider.com/2021/04/27/silq-the-easier-quantum-computer-programming-language/#:~:text=According%20to%20computer%20science%20professor,recipe%20that%20gives%20temporary%20values)
+[^8]: [Silq: A High-Level Quantum Language with Safe Uncomputation and Intuitive Semantics](https://files.sri.inf.ethz.ch/website/papers/pldi20-silq.pdf#:~:text=temporary%20values%2C%20as%20in%20classical,engineering%20%E2%86%92%20For%02mal%20language%20definitions)
+[^9]: [Silq - Documentation](https://silq.ethz.ch/documentation#:~:text=To%20indicate%20that%20a%20type,and%20not)
+[^10]: [Silq: A High-Level Quantum Language with Safe Uncomputation and Intuitive Semantics](https://files.sri.inf.ethz.ch/website/papers/pldi20-silq.pdf#:~:text=novel%20annotations%20to%20reject%20unphysical,engineering%20%E2%86%92%20For%02mal%20language%20definitions)
+[^11]: [Meet Silq- The First Intuitive High-Level Language for Quantum Computers | Artificial Intelligence](https://www.artiba.org/blog/meet-silq-the-first-intuitive-high-level-language-for-quantum-computers#:~:text=,%E2%80%93%20Benjamin%20Bichsel)
+[^12]: [[1304.3390] Quipper: A Scalable Quantum Programming Language](https://arxiv.org/abs/1304.3390#:~:text=,formal%20methods%20to%20analyze%20quantum)
+[^13]: [[1304.3390] Quipper: A Scalable Quantum Programming Language](https://arxiv.org/abs/1304.3390#:~:text=practical%20scale%2C%20i,formal%20methods%20to%20analyze%20quantum)
+[^14]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=Quipper%20is%20a%20functional%20programming,algorithms%20from%20the%20quantum%20computing)
+[^15]: [The Quipper Language](https://www.mathstat.dal.ca/~selinger/quipper/#:~:text=%2A%20A%20high,Extensible%20quantum%20data%20types)
+[^16]: [The Quipper Language](https://www.mathstat.dal.ca/~selinger/quipper/#:~:text=styles.%20%2A%20Built,generated%20at%20circuit%20execution%20time)
+[^17]: [The Quipper Language](https://www.mathstat.dal.ca/~selinger/quipper/#:~:text=integer%20and%20fixed,circuits%20into%20specific%20gate%20sets)
+[^18]: [[1304.3390] Quipper: A Scalable Quantum Programming Language](https://arxiv.org/abs/1304.3390#:~:text=quantum%20programming%20language,methods%20to%20analyze%20quantum%20algorithms)
+[^19]: [The Quipper Language](https://www.mathstat.dal.ca/~selinger/quipper/#:~:text=,Kuperberg%27s%20Unique%20Shortest%20Vector%20algorithm)
+[^20]: [[1304.3390] Quipper: A Scalable Quantum Programming Language](https://arxiv.org/abs/1304.3390#:~:text=using%20trillions%20of%20gates,formal%20methods%20to%20analyze%20quantum)
+[^21]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=We%20introduce%20the%20language%20QML%2C,Strict%20pro%02grams%20are%20free%20from](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=We%20introduce%20the%20language%20QML%2C,Strict%20pro%02grams%20are%20free%20from)
+[^22]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=We%20present%20a%20semantics%20of,is%20usually%20defined%20by%20presenting](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=We%20present%20a%20semantics%20of,is%20usually%20defined%20by%20presenting)
+[^23]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=quantum%20computations%2C%20which%20provides%20a,1%20Introduction](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=quantum%20computations%2C%20which%20provides%20a,1%20Introduction)
+[^24]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=quantum%20gates,1%20Introduction](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=quantum%20gates,1%20Introduction)
+[^25]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=this%20operation%20is%20implemented%20by,started%20by%20cancelling%20out%20amplitudes](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=this%20operation%20is%20implemented%20by,started%20by%20cancelling%20out%20amplitudes)
+[^26]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=possibility%20to%20create%20superpositions%20which,subtle%20exploitation%20of%20this%20effect](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=possibility%20to%20create%20superpositions%20which,subtle%20exploitation%20of%20this%20effect)
+[^27]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=introduce%20here,operational%20semantics%20for%20quantum%20programs](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=introduce%20here,operational%20semantics%20for%20quantum%20programs)
+[^28]: [Quantum programming - Wikipedia](https://en.wikipedia.org/wiki/Quantum_programming#:~:text=The%20first%20attempt%20to%20define,strictly%20stronger%20than%20the%20standard)
+[^29]: [Quantum programming - Wikipedia](https://en.wikipedia.org/wiki/Quantum_programming#:~:text=match%20at%20L651%20quantum%20circuit,citation%20needed)
+[^30]: [Quantum Programming Language | Quantiki](https://quantiki.org/wiki/quantum-programming-language#:~:text=)
+[^31]: [Quantum Programming Language | Quantiki](https://quantiki.org/wiki/quantum-programming-language#:~:text=Quantum%20Lambda%20Language%20is%20based,has%20the%20same%20computational%20power)
+[^32]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=development%20of%20Proto,linear%20type%20system%20with%20subtyping)
+[^33]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=Selinger%202018%5D.%20More%20recently%2C%20Proto,Fu%20et%20al.%202020b%2Ca)
+[^34]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=Proto,known%20at%20circuit%20generation%20time)
+[^35]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=Proto,also%20a%20subset%20of%20state)
+[^36]: [Silq: A High-Level Quantum Language with Safe Uncomputation and Intuitive Semantics](https://files.sri.inf.ethz.ch/website/papers/pldi20-silq.pdf#:~:text=Convenience%20Functions,1%20shows%20a%20Quipper%20implementation)
+[^37]: [Quantum programming - Wikipedia](https://en.wikipedia.org/wiki/Quantum_programming#:~:text=Quantum%20Guarded%20Command%20Language%20,created%20by%20%20200)
+[^38]: [Introduction to Quantum Programming Languages](https://chrisheunen.github.io/iqpl/silq.html#:~:text=SILQ%20programs%20operate%20much%20like,This%20is%20known%20as%20the)
+[^39]: [Silq - Documentation](https://silq.ethz.ch/documentation#:~:text=We%20use%20the%20annotation%20,ii%29%20enables%20automatic%20uncomputation)
+[^40]: [[1304.5485] An Introduction to Quantum Programming in Quipper](http://ar5iv.org/abs/1304.5485#:~:text=plus_minus%20%3A%3A%20Bool%20,hadamard%20q)
+[^41]: [[1304.5485] An Introduction to Quantum Programming in Quipper](http://ar5iv.org/abs/1304.5485#:~:text=directly%20from%20the%20given%20code,to%20be%20controlled%20by%20the)
+[^42]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=an%20arbitrary%20state,each%20amplitude%20of%20the%20resulting](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=an%20arbitrary%20state,each%20amplitude%20of%20the%20resulting)
+[^43]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=are%20illustrated%20with%20a%20concrete,level%20primitives](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=are%20illustrated%20with%20a%20concrete,level%20primitives)
+[^44]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=semantics%20for%20fragments%20of%20Quipper,linear%20type%20system%20with%20subtyping)
+[^45]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=language%2C%20Quipper%20shares%20some%20of,of%20Illinois%20at%20Urbana%02Champaign%2C%20USA)
+[^46]: [Silq - Documentation](https://silq.ethz.ch/documentation#:~:text=classical%3A%20It%20has%20type%20,and%20not)
+[^47]: [Simple example programs using Silq - Packt+ | Advance your ...](https://www.packtpub.com/en-HU/product/quantum-computing-with-silq-programming-9781800569669/chapter/chapter-6-silq-programming-basics-and-features-8/section/simple-example-programs-using-silq-ch08lvl1sec53?srsltid=AfmBOoo9-TQ0uiKfeMCvRbbI4aaSarY3RkE6jDsj56rAOPI5aGk6YiOc#:~:text=Simple%20example%20programs%20using%20Silq,on%20the%20quantum%20logic)
+[^48]: [[1304.5485] An Introduction to Quantum Programming in Quipper](http://ar5iv.org/abs/1304.5485#:~:text=match%20at%20L196%20example%2C%20to,set%20the%20parameter%20to)
+[^49]: [[1304.5485] An Introduction to Quantum Programming in Quipper](http://ar5iv.org/abs/1304.5485#:~:text=illustrate%20many%20of%20Quipper%E2%80%99s%20language,a%20quantum%20circuit%20for%20addition)
+[^50]: [[1304.5485] An Introduction to Quantum Programming in Quipper](http://ar5iv.org/abs/1304.5485#:~:text=1)
+[^51]: [https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=input%20qubit%20x%2C%20returns%20one,by%20query%02ing%20both%20inputs%20at](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=input%20qubit%20x%2C%20returns%20one,by%20query%02ing%20both%20inputs%20at)
+[^52]: [[PDF] A functional quantum programming language](https://people.cs.nott.ac.uk/psztxa/publ/qml.pdf#:~:text=We%20introduce%20the%20language%20QML%2C,its%20categorical%20semantics%3A%20QML)
+[^53]: [Quantum programming - Wikipedia](https://en.wikipedia.org/wiki/Quantum_programming#:~:text=In%202003%2C%20Andr%C3%A9%20van%20Tonder,extension%20of%20the%20lambda%20calculus)
+[^54]: [Proto-Quipper with Dynamic Lifting](https://cse.sc.edu/~pfu/document/papers/dynlift.pdf#:~:text=match%20at%20L105%20Proto,also%20a%20subset%20of%20state)
+[^55]: [http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=took%20advantage%20of%20the%20many,prune%20in%20the%20exponential%20complexity](http://www.p-cos.net/documents/vub-prog-tr-06-15.pdf#:~:text=took%20advantage%20of%20the%20many,prune%20in%20the%20exponential%20complexity)

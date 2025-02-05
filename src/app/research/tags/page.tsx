@@ -3,14 +3,7 @@ import { getAllTags } from "@/lib/tags";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { IconTag, IconBrain, IconCode, IconNetwork } from "@tabler/icons-react";
-
-const iconMap = {
-  code: IconCode,
-  brain: IconBrain,
-  network: IconNetwork,
-  tag: IconTag
-} as const;
+import { TagIcon } from "@/components/ui/tag-icon";
 
 export default async function TagsPage() {
   const posts = getAllResearchPosts();
@@ -28,14 +21,14 @@ export default async function TagsPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tags.map((tag) => {
-          const IconComponent = tag.icon ? iconMap[tag.icon as keyof typeof iconMap] : IconTag;
+
 
           return (
-            <Link key={tag.name} href={`/research/tags/${encodeURIComponent(tag.name)}`}>
+            <Link key={tag.name} href={`/research/tags/${encodeURIComponent(tag.name)}`} prefetch={false}>
               <Card className="hover:shadow-lg transition-shadow duration-300 h-full">
                 <CardHeader>
                   <div className="flex items-center space-x-2">
-                    <IconComponent className="w-6 h-6 text-primary" />
+                    <TagIcon icon={tag.icon} className="text-primary" size={24} />
                     <CardTitle>{tag.name}</CardTitle>
                     <Badge variant="secondary">{tag.posts.length}</Badge>
                   </div>
